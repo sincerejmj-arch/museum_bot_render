@@ -31,11 +31,14 @@ def set_notification_mode(mode):
         print(f"모드 저장 실패: {e}")
         return False
 
-def get_bot_updates():
+def get_bot_updates(offset=None):
     """텔레그램 봇의 새 메시지 확인"""
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/getUpdates"
+    params = {}
+    if offset:
+        params['offset'] = offset
     try:
-        response = requests.get(url, timeout=10)
+        response = requests.get(url, params=params, timeout=10)
         if response.status_code == 200:
             return response.json()
     except Exception as e:
@@ -50,8 +53,13 @@ def process_commands():
     
     current_mode = get_notification_mode()
     command_result = None
+    last_update_id = None
     
     for update in updates['result']:
+        # 마지막 update_id 추적
+        if 'update_id' in update:
+            last_update_id = update['update_id']
+        
         if 'message' in update and 'text' in update['message']:
             text = update['message']['text'].strip().lower()
             chat_id = str(update['message']['chat']['id'])
@@ -139,6 +147,10 @@ def process_commands():
                     f"조회 날짜: 2026년 2월 14일\n"
                     f"체크 주기: 5분마다 (Render.com)"
                 )
+    
+    # 처리한 메시지 삭제 (다음번에 다시 처리하지 않도록)
+    if last_update_id:
+        get_bot_updates(offset=last_update_id + 1)
     
     return command_result
 
