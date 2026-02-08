@@ -117,11 +117,7 @@ def process_commands():
                         "변경하려면:\n"
                         "/always - 매번 알림으로 변경"
                     )
-                else:
-                    send_telegram_message(
-                        "ℹ️ 이미 실행 중입니다.\n\n"
-                        f"현재 모드: {'매번 알림' if old_mode == 'always' else '예약 가능할 때만'}"
-                    )
+                # 이미 실행 중인 경우 조용히 무시 (메시지 안 보냄)
             
             elif text == '/help' or text == '/도움말':
                 mode_text = "매번 알림" if current_mode == 'always' else "예약 가능할 때만 알림" if current_mode == 'available_only' else "중지됨"
@@ -279,9 +275,7 @@ def check_reservation():
                         status_text = "매진"
                     
                     status_message += f"{status_icon} <b>{play_time}</b>\n"
-                    status_message += f"   🎫 온라인 예약: {book_remain}명\n"
-                    status_message += f"   💡 상태: {status_text}\n"
-                    status_message += "\n"
+                    status_message += f"   🎫 온라인 예약: {book_remain}명 ({status_text})\n"
                 
                 if found_10am_available:
                     status_message += "🎯 <b>2월 14일 10시 타임 예약 가능!</b>\n\n"
