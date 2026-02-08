@@ -225,7 +225,7 @@ def check_reservation():
     
     status_message += f"━━━━━━━━━━━━━━━━━\n\n"
     
-    found_10am_available = False
+    target_times_available = False
     
     try:
         if isinstance(data, dict) and 'data' in data:
@@ -240,6 +240,7 @@ def check_reservation():
                 status_message += f"📊 <b>예약 현황</b>\n\n"
                 
                 found_10am = False
+                target_times_available = False  # 목표 시간대 예약 가능 여부
                 
                 for slot in time_slots:
                     start_time = slot.get('start_time', '')
@@ -255,6 +256,10 @@ def check_reservation():
                     else:
                         end_formatted = end_time
                     
+                    # 16:30 시간대는 표시하지 않음
+                    if start_formatted.startswith('16:30'):
+                        continue
+                    
                     play_time = f"{start_formatted} ~ {end_formatted}"
                     
                     book_yn = slot.get('book_yn', '0')
@@ -262,10 +267,14 @@ def check_reservation():
                     
                     book_remain = slot.get('book_remain_count', 0)
                     
+                    # 10시 타임 확인
                     if start_formatted.startswith('10:'):
                         found_10am = True
-                        if is_bookable and book_remain > 0:
-                            found_10am_available = True
+                    
+                    # 목표 시간대(10:00, 12:00, 13:30, 15:00) 중 4명 이상 예약 가능한지 확인
+                    if start_formatted in ['10:00', '12:00', '13:30', '15:00']:
+                        if is_bookable and book_remain >= 4:
+                            target_times_available = True
                     
                     if book_remain > 0:
                         status_icon = "✅"
@@ -277,14 +286,15 @@ def check_reservation():
                     status_message += f"{status_icon} <b>{play_time}</b>\n"
                     status_message += f"   🎫 온라인 예약: {book_remain}명 ({status_text})\n"
                 
-                if found_10am_available:
-                    status_message += "🎯 <b>2월 14일 10시 타임 예약 가능!</b>\n\n"
+                if target_times_available:
+                    status_message += "\n🎯 <b>목표 시간대 예약 가능!</b>\n"
+                    status_message += "<b>(10:00, 12:00, 13:30, 15:00 중 4명 이상)</b>\n\n"
                     status_message += f"🔗 <a href='https://www.museum.go.kr/MUSEUM/contents/M0104010000.do?schM=child&act=intro'>지금 바로 예약하러 가기</a>\n"
                     status_message += "⚠️ <b>서둘러 확인하세요!</b>"
                 elif found_10am:
-                    status_message += "ℹ️ 10시 타임이 있지만 현재 매진이거나 예약 불가 상태입니다."
+                    status_message += "\nℹ️ 목표 시간대가 아직 4명 이상 예약 가능하지 않습니다."
                 else:
-                    status_message += "ℹ️ 아직 10시 타임 정보가 표시되지 않았습니다."
+                    status_message += "\nℹ️ 아직 10시 타임 정보가 표시되지 않았습니다."
             else:
                 status_message += "ℹ️ 예약 가능한 시간대가 없습니다.\n"
                 status_message += "아직 예약이 오픈되지 않았을 수 있습니다."
@@ -308,11 +318,11 @@ def check_reservation():
         # 매번 알림 모드
         should_send = True
     elif current_mode == 'available_only':
-        # 예약 가능할 때만 알림
-        if found_10am_available:
+        # 예약 가능할 때만 알림 (목표 시간대 4명 이상)
+        if target_times_available:
             should_send = True
         else:
-            print(f"[{current_time}] 예약 불가 - 알림 생략 (available_only 모드)")
+            print(f"[{current_time}] 목표 시간대 예약 불가 - 알림 생략 (available_only 모드)")
     elif current_mode == 'stopped':
         # 중지 모드 (위에서 이미 처리했지만 안전장치)
         should_send = False
