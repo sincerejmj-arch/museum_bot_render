@@ -1,6 +1,6 @@
 import requests
 import os
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 import json
 
 # 환경 변수에서 텔레그램 정보 가져오기
@@ -201,7 +201,9 @@ def check_reservation():
     # 먼저 명령어 확인
     command = process_commands()
     
-    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    # 한국 시간 (KST = UTC+9)
+    kst = timezone(timedelta(hours=9))
+    current_time = datetime.now(kst).strftime("%Y-%m-%d %H:%M:%S")
     current_mode = get_notification_mode()
     
     # /stop 명령으로 중지된 경우
